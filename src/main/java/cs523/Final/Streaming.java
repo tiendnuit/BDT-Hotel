@@ -56,7 +56,7 @@ public class Streaming {
 
 		stream.foreachRDD(rdd -> rdd.foreach(System.out::println));
 
-		SQLContext sqlContext =  new SQLContext(jsp);
+		//SQLContext sqlContext =  new SQLContext(jsp);
 		
 		String schemaString = "name,empid,salary";
 //ConsumerRecord(topic = testTopic, partition = 0, offset = 579106, CreateTime = 1586567977855, checksum = 644638194, serialized key size = -1, serialized value size = 12, key = null, value = good evening)
