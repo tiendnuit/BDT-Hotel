@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/bin/sh
 file="/home/cloudera/Desktop/Final/input/hotel_bookings.csv"
 count=1
 delay=5

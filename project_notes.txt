@@ -1,3 +1,4 @@
+#======================= KAFKA ===================
 # Start Zookeeper
 bin/zookeeper-server-start.sh config/zookeeper.properties
 
@@ -25,13 +26,17 @@ bin/kafka-topics.sh --describe --zookeeper localhost:2181 --topic HotelBookingSu
 #view services
 service --status-all
 
-#Start hbase-master
-sudo service hbase-master start
+#Start hbase-master and hbase-region server
+sudo service hbase-master start | sudo service hbase-regionserver start
 
-#start hbase-region server
-sudo service hbase-regionserver start
 
 
 #View HBASE recorded:
 hbase shell
-scan 'hotel'
+scan 'Hotel'
+
+
+#======================= PROJECT SCRIPT ===================
+#move and run to runPushData.sh find
+cd /home/cloudera/git/BDT-Hotel1/script/
+chmod +x runPushData.sh
