@@ -1,0 +1,23 @@
+# Start Zookeeper
+bin/zookeeper-server-start.sh config/zookeeper.properties
+
+# Start a broker
+bin/kafka-server-start.sh config/server.properties
+  (if want more broker)  bin/kafka-server-start.sh config/server1.properties  # remember to update in bin/kafka-server-start.sh config/server.properties
+
+#create topic
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --topic HotelBookingSummary --replication-factor 1 --partitions 1
+OR
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --topic HotelBookingSummary --replication-factor 2 --partitions 2
+
+
+#delete topic (if really want to delete)
+bin/kafka-topics.sh --zookeeper localhost:2181 --delete --topic HotelBookingSummary
+
+#list all topics
+bin/kafka-topics.sh --list --zookeeper localhost:2181
+
+#Describe topic
+bin/kafka-topics.sh --describe --zookeeper localhost:2181 --topic HotelBookingSummary
+
+#
