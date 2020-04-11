@@ -65,7 +65,7 @@ public class HBase {
 	private static TableName tableName;
 	private static long rowKey = 0;
 	
-	public static void createTable(List<String> values) throws IOException {
+	public static void createTable() throws IOException {
 
 		config = HBaseConfiguration.create();
 		connection = ConnectionFactory.createConnection(config);
@@ -97,7 +97,7 @@ public class HBase {
 		rowKey++;
 		List<Put> puts = new ArrayList<>();
 		
-		Put p = new Put(Bytes.toBytes(rowKey));
+		Put p = new Put(Bytes.toBytes(String.valueOf(rowKey)));
 		p.addColumn(Bytes.toBytes(CF_HOTEL), Bytes.toBytes(CF_HOTEL_hotel),Bytes.toBytes(values.get(0)));
 		
 		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_is_canceled),Bytes.toBytes(values.get(1)));

@@ -6,7 +6,7 @@ bin/kafka-server-start.sh config/server.properties
   (if want more broker)  bin/kafka-server-start.sh config/server1.properties  # remember to update in bin/kafka-server-start.sh config/server.properties
 
 #create topic
-bin/kafka-topics.sh --create --zookeeper localhost:2181 --topic HotelBookingSummary --replication-factor 1 --partitions 1
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --topic HotelBookingSummary1 --replication-factor 1 --partitions 1
 OR
 bin/kafka-topics.sh --create --zookeeper localhost:2181 --topic HotelBookingSummary --replication-factor 2 --partitions 2
 
@@ -20,4 +20,18 @@ bin/kafka-topics.sh --list --zookeeper localhost:2181
 #Describe topic
 bin/kafka-topics.sh --describe --zookeeper localhost:2181 --topic HotelBookingSummary
 
-#
+
+#======================= HBASE ===================
+#view services
+service --status-all
+
+#Start hbase-master
+sudo service hbase-master start
+
+#start hbase-region server
+sudo service hbase-regionserver start
+
+
+#View HBASE recorded:
+hbase shell
+scan 'hotel'
