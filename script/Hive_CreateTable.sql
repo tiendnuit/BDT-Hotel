@@ -40,7 +40,7 @@ CREATE EXTERNAL TABLE hotel
 ) 
 STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
 WITH SERDEPROPERTIES 
-("hbase.columns.mapping" = ":key,CF_HOTEL:CF_HOTEL_hotel,
+("hbase.columns.mapping" = ":key,CF_HOTEL:hotel,
 								
 								CF_BOOKING:is_canceled,
 								CF_BOOKING:lead_time,

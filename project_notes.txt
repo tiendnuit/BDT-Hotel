@@ -46,7 +46,7 @@ cd /home/cloudera/git/BDT-Hotel1/script/
 chmod +x runPushData.sh
 
 
-#======================== HIVE=============================
+#======================== HIVE =============================
 # If Run command hive error, use below commands:
 
 #restart namenode and datanote services
@@ -55,4 +55,14 @@ sudo  service hadoop-hdfs-datanode restart
 
 #don't run in safe mode if any error
 sudo -u hdfs hdfs dfsadmin -safemode leave
+
+
+#======================== Zeppelin =============================
+bin/zeppelin-daemon.sh restart
+
+#config hive context to Spark to run in Zeppelin
+sudo cp '/etc/hive/conf/hive-site.xml' /etc/spark/conf
+
+
+
 
