@@ -2,9 +2,12 @@ package bdt.hotel.utils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -12,10 +15,25 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.execution.datasources.hbase.HBaseTableCatalog;
+import org.apache.spark.streaming.Durations;
+import org.apache.spark.streaming.api.java.JavaStreamingContext;
+
+import com.google.protobuf.ServiceException;
+
 
 public class HBase {
 	
@@ -59,18 +77,24 @@ public class HBase {
 	public static final String CF_BOOKING_DETAILS_reservation_status = "reservation_status";
 	public static final String CF_BOOKING_DETAILS_reservation_status_date = "reservation_status_date";
 	
+	public static final String SQL_HOTEL = "hotel";
+	public static final String SQL_BOOKING_IS_CANCEL = "is_canceled";
+	public static final String SQL_BOOKING_AGENT = "agent";
 	
 	private static Configuration config;
 	private static Connection connection;
 	private static TableName tableName;
 	private static long rowKey = 0;
 	
-	public static void createTable() throws IOException {
-
+	
+	private static void setupDB() throws IOException  {
 		config = HBaseConfiguration.create();
 		connection = ConnectionFactory.createConnection(config);
 		tableName = TableName.valueOf(TABLE_NAME);
-		
+	}
+	
+	public static void createTable() throws IOException {
+		setupDB();
 		try (Admin admin = connection.getAdmin())
 		{
 			HTableDescriptor table = new HTableDescriptor(tableName);
@@ -101,38 +125,38 @@ public class HBase {
 		p.addColumn(Bytes.toBytes(CF_HOTEL), Bytes.toBytes(CF_HOTEL_hotel),Bytes.toBytes(values.get(0)));
 		
 		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_is_canceled),Bytes.toBytes(values.get(1)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_lead_time),Bytes.toBytes(values.get(2)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_arrival_date_year),Bytes.toBytes(values.get(3)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_arrival_date_month),Bytes.toBytes(values.get(4)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_arrival_date_week_number),Bytes.toBytes(values.get(5)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_arrival_date_day_of_month_),Bytes.toBytes(values.get(6)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_stays_in_weekend_nights),Bytes.toBytes(values.get(7)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_stays_in_week_nights),Bytes.toBytes(values.get(8)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_adults_),Bytes.toBytes(values.get(9)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_children),Bytes.toBytes(values.get(10)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_babies),Bytes.toBytes(values.get(11)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_meal),Bytes.toBytes(values.get(12)));
-		
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_country),Bytes.toBytes(values.get(13)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_market_segment),Bytes.toBytes(values.get(14)));
-		
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_distribution_channel),Bytes.toBytes(values.get(15)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_is_repeated_guest),Bytes.toBytes(values.get(16)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_previous_cancellations),Bytes.toBytes(values.get(17)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_previous_bookings_not_canceled),Bytes.toBytes(values.get(18)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_reserved_room_type),Bytes.toBytes(values.get(19)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_assigned_room_type),Bytes.toBytes(values.get(20)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_booking_changes),Bytes.toBytes(values.get(21)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_deposit_type),Bytes.toBytes(values.get(22)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_lead_time),Bytes.toBytes(values.get(2)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_arrival_date_year),Bytes.toBytes(values.get(3)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_arrival_date_month),Bytes.toBytes(values.get(4)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_arrival_date_week_number),Bytes.toBytes(values.get(5)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_arrival_date_day_of_month_),Bytes.toBytes(values.get(6)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_stays_in_weekend_nights),Bytes.toBytes(values.get(7)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_stays_in_week_nights),Bytes.toBytes(values.get(8)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_adults_),Bytes.toBytes(values.get(9)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_children),Bytes.toBytes(values.get(10)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_babies),Bytes.toBytes(values.get(11)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING), Bytes.toBytes(CF_BOOKING_meal),Bytes.toBytes(values.get(12)));
+//		
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_country),Bytes.toBytes(values.get(13)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_market_segment),Bytes.toBytes(values.get(14)));
+//		
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_distribution_channel),Bytes.toBytes(values.get(15)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_is_repeated_guest),Bytes.toBytes(values.get(16)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_previous_cancellations),Bytes.toBytes(values.get(17)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_previous_bookings_not_canceled),Bytes.toBytes(values.get(18)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_reserved_room_type),Bytes.toBytes(values.get(19)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_assigned_room_type),Bytes.toBytes(values.get(20)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_booking_changes),Bytes.toBytes(values.get(21)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_deposit_type),Bytes.toBytes(values.get(22)));
 		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_agent),Bytes.toBytes(values.get(23)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_company),Bytes.toBytes(values.get(24)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_days_in_waiting_list),Bytes.toBytes(values.get(25)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_customer_type),Bytes.toBytes(values.get(26)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_adr),Bytes.toBytes(values.get(27)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_required_car_parking_spaces),Bytes.toBytes(values.get(28)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_total_of_special_requests),Bytes.toBytes(values.get(29)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_reservation_status),Bytes.toBytes(values.get(30)));
-		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_reservation_status_date),Bytes.toBytes(values.get(31)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_company),Bytes.toBytes(values.get(24)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_days_in_waiting_list),Bytes.toBytes(values.get(25)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_customer_type),Bytes.toBytes(values.get(26)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_adr),Bytes.toBytes(values.get(27)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_required_car_parking_spaces),Bytes.toBytes(values.get(28)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_total_of_special_requests),Bytes.toBytes(values.get(29)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_reservation_status),Bytes.toBytes(values.get(30)));
+//		p.addColumn(Bytes.toBytes(CF_BOOKING_DETAILS), Bytes.toBytes(CF_BOOKING_DETAILS_reservation_status_date),Bytes.toBytes(values.get(31)));
 		
 		
 		puts.add(p);
@@ -142,4 +166,50 @@ public class HBase {
 		System.out.println("Added data <rowKey>: " + rowKey + " successfully");
 	}
 	
+	public static void readData() throws IOException {
+		setupDB();
+		//config.addResource(new Path("/etc/hbase/conf/hbase-site.xml"));
+		try {
+	        HBaseAdmin.checkHBaseAvailable(config);
+	        System.out.println("HBase is running");
+	    } catch (ServiceException e) {
+	        System.out.println("HBase is not running");
+	        e.printStackTrace();
+	    }
+		Table table = connection.getTable(tableName);
+		//Config
+		SparkConf sparkConf = new SparkConf()
+				.setAppName("HotelBookingSummary1")
+				.setMaster("local[2]");
+				
+		JavaSparkContext context = new JavaSparkContext(sparkConf);
+		context.hadoopConfiguration().set("spark.hbase.host", "localhost");
+		context.hadoopConfiguration().set("spark.hbase.port", "2181");
+        SQLContext sqlContext = new SQLContext(context);
+        String catalog = "{\n" +
+        		 "\t\"table\":{\"namespace\":\"default\", \"name\":\"Hotel\", \"tableCoder\":\"PrimitiveType\"},\n" +
+        		 "    \"rowkey\":\"key\",\n" +
+        		 "    \"columns\":{\n" +
+        		 "\t    \"rowkey\":{\"cf\":\"rowkey\", \"col\":\"key\", \"type\":\"string\"},\n" +
+        		 "\t    \"hotel\":{\"cf\":\"CF_HOTEL\", \"col\":\"hotel\", \"type\":\"string\"},\n" +
+        		 "\t    \"is_canceled\":{\"cf\":\"CF_BOOKING\", \"col\":\"is_canceled\", \"type\":\"string\"},\n" +
+        		 "\t    \"agent\":{\"cf\":\"CF_BOOKING_DETAILS\", \"col\":\"agent\", \"type\":\"string\"}\n" +
+        		 "    }\n" +
+        		 "}";
+        
+        System.out.println(catalog);
+        Map<String, String> optionsMap = new HashMap<>();
+
+        String htc = HBaseTableCatalog.tableCatalog();
+
+        optionsMap.put(htc, catalog);
+        Dataset dataset = sqlContext.read().options(optionsMap).format("org.apache.spark.sql.execution.datasources.hbase").load();
+        dataset.createOrReplaceTempView("hotel");
+        sqlContext.sql("select * from hotel");
+        //sqlContext.sql("select * from hotel").registerTempTable("hotel");
+	}
+	
+	public static void main(String[] args) throws Exception {
+		HBase.readData();
+	}
 }

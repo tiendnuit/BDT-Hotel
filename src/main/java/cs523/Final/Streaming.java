@@ -38,7 +38,7 @@ public class Streaming {
 
 		//Config
 		SparkConf sparkConf = new SparkConf()
-		.setAppName("Streaming Kafka-Spark")
+		.setAppName(TOPIC)
 		.setMaster("local[2]");
 		
 	    JavaStreamingContext streamingContext = new JavaStreamingContext(sparkConf, Durations.seconds(2));
