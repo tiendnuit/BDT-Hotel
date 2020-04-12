@@ -1,5 +1,5 @@
 -- Drop existing table
---DROP TABLE IF EXISTS hotel;
+DROP TABLE IF EXISTS hotel;
 
 -- create and import to Hive from Hbase
 CREATE EXTERNAL TABLE hotel
