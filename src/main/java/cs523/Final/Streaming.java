@@ -17,12 +17,13 @@ import org.apache.spark.streaming.kafka010.ConsumerStrategies;
 import org.apache.spark.streaming.kafka010.KafkaUtils;
 import org.apache.spark.streaming.kafka010.LocationStrategies;
 
+import bdt.hotel.utils.Constants;
 import bdt.hotel.utils.HBase;
 
 
 public class Streaming {
 	
-	final static String TOPIC = "HotelBookingSummary1";
+	final static String TOPIC = Constants.Kafka.TOPIC;
 	public static void main(String[] args) throws Exception
 	{
 		Map<String, Object> kafkaParams = new HashMap<>();
@@ -39,7 +40,7 @@ public class Streaming {
 		//Config
 		SparkConf sparkConf = new SparkConf()
 		.setAppName(TOPIC)
-		.setMaster("local[2]");
+		.setMaster("local[1]");
 		
 	    JavaStreamingContext streamingContext = new JavaStreamingContext(sparkConf, Durations.seconds(2));
 
