@@ -1,6 +1,7 @@
 package cs523.Final;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,13 +12,16 @@ import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.execution.datasources.hbase.HBaseTableCatalog;
+import org.apache.spark.sql.hive.HiveContext;
 
 import bdt.hotel.utils.HBase;
+import bdt.hotel.utils.HiveDB;
 import bdt.hotel.utils.ParseFile;
 
 import com.google.protobuf.ServiceException;
@@ -39,7 +43,7 @@ public class SparkSQL {
 	}
 	
 	@SuppressWarnings("deprecation")
-	public static void readData() throws IOException {
+	public static void readData() throws IOException, ClassNotFoundException, SQLException {
 		setupDB();
 		//config.addResource(new Path("/etc/hbase/conf/hbase-site.xml"));
 		try {
@@ -52,14 +56,20 @@ public class SparkSQL {
 		//Spec config Config loading
 		SparkConf sparkConf = new SparkConf()
 				.setAppName(HBase.SQL_HOTEL)
+				
 				.setMaster("local[2]")
+				
 				.set("spark.sql.warehouse.dir", "/home/cloudera/hive/warehouse");
 				
 		JavaSparkContext context = new JavaSparkContext(sparkConf);
 		//context.hadoopConfiguration().set("spark.hbase.host", "localhost");
 		//context.hadoopConfiguration().set("spark.hbase.port", "2181");
-        SQLContext sqlContext = new SQLContext(context);
+        //SQLContext sqlContext = new SQLContext(context);
+		SQLContext sqlContext = new SQLContext(context);
         
+        
+        //SparkSession sparkSession = SparkSession.builder().master("local[2]").appName(HBase.SQL_HOTEL)
+   		//	 .config("spark.sql.warehouse.dir", "/home/cloudera/hive/warehouse").getOrCreate();
         
         String catalogSQLScheme = ParseFile.getAllLinesFromJson("/home/cloudera/git/BDT-Hotel/src/main/java/bdt/hotel/json/HotelSQLSchema.json");
         
@@ -71,21 +81,23 @@ public class SparkSQL {
         String htc = HBaseTableCatalog.tableCatalog();
         optionsMap.put(htc, catalogSQLScheme);
         
-        //Load data set and create table Spark SQL
+        //create dataframe and temporary views table by Spark SQL
         Dataset<Row> dataset = sqlContext.read().options(optionsMap).format("org.apache.spark.sql.execution.datasources.hbase").load();
-        dataset.createOrReplaceTempView(tableStringName);
-        sqlContext.sql("select * from " + tableStringName).show();
-        //sqlContext.sql("select * from hotel").registerTempTable("hotel");
+        dataset.createOrReplaceTempView(tableStringName + "_mem");
         
-        /*
-        try {
-			Thread.sleep(86400000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} //throws InterruptedException. 
-        context.stop();
-        */
+        //test to display table in console
+        //HiveDB.viewDateUseSQL(sqlContext, tableStringName + "_mem", 20);
+        
+        //create table Hive
+        HiveDB.createTableUseSQL(sqlContext, "tabletest1");
+        //insert data
+        //HiveDB.insertDataUseSQL(sqlContext);
+        //HiveDB.createTableUseJDBC("testtest");
+        
+       
+        
+        System.out.println("done to query");
+     
 	}
 	
 	
@@ -93,7 +105,7 @@ public class SparkSQL {
 	public static void main(String[] args) {
 		try {
 			SparkSQL.readData();
-		} catch (IOException e) {
+		} catch (IOException | ClassNotFoundException | SQLException e) {
 			e.printStackTrace();
 		}
 

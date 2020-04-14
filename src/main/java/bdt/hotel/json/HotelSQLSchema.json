@@ -4,7 +4,7 @@
     "columns":{
      	"rowkey":{"cf":"rowkey", "col":"key", "type":"string"},
      	"hotel":{"cf":"CF_HOTEL", "col":"hotel", "type":"string"},
-     	
+     	     	
      	"is_canceled":{"cf":"CF_BOOKING", "col":"is_canceled", "type":"string"},
      	"lead_time":{"cf":"CF_BOOKING", "col":"lead_time", "type":"string"},
      	"arrival_date_year":{"cf":"CF_BOOKING", "col":"arrival_date_year", "type":"string"},
