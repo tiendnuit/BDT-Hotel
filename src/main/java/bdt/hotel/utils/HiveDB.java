@@ -13,7 +13,11 @@ import org.apache.spark.sql.SQLContext;
 
 public class HiveDB {
 	
-	private static final String hiveDriverName = "org.apache.hive.jdbc.HiveDriver";
+	private static final String HIVE_DRIVER_NAME = "org.apache.hive.jdbc.HiveDriver";
+	private static final String HIVE_URL = "jdbc:hive2://localhost:10000/default";
+	private static final String HIVE_USERNAME = "cloudera";
+	private static final String HIVE_PASSWORD = "cloudera";
+	public static final String HIVE_TABLE_NAME = "hotel";
 	private static Connection con;
 	
 	private static final String HiveSQLCreateTable = 
@@ -56,28 +60,39 @@ public class HiveDB {
 		sqlContext.sql("select * from " + tableName).show(numLine);
 	}
 	
-	public static void createTableUseSQL(SQLContext sqlContext, String tableName) {
-		//sqlContext.sql("create table h1 as select * from  " + tableName);
-		sqlContext.sql("create table " + tableName + HiveSQLCreateTable);
+	public static void createTableBySelectUseSQL(SQLContext sqlContext, String tableName, String sparkTempViewName) {
+		sqlContext.sql("create table " + tableName + " using hive as select * from "+ sparkTempViewName);
 	}
 	
-	public static void deleteTableUseSQL(SQLContext sqlContext, String tableName) {
-		sqlContext.sql("truncate * from  " + tableName);
+	public static void createTableUseSQL(SQLContext sqlContext, String tableName, String schemaFields) {
+		sqlContext.sql("create table if not exists " + tableName + " using hive " + schemaFields);
 	}
 	
-	public static void insertDataUseSQL(SQLContext sqlContext, String tableName) {
+	public static void dropTableUseSQL(SQLContext sqlContext, String tableName) {
+		sqlContext.sql("drop table if exists " + tableName);
+	}
+	
+	public static void truncateTableUseSQL(SQLContext sqlContext, String tableName) {
+		sqlContext.sql("truncate table if exists " + tableName);
+	}
+	
+	public static void insertDataUseSQL(SQLContext sqlContext, String tableName, String sparkTempViewName) {
 		//sqlContext.sql("select * from hotel").show(100);
 		//sqlContext.sql("create table h1 as select * from hotel");
-		sqlContext.sql("insert into h1 select * from " + tableName);
+		sqlContext.sql("insert into " + tableName + " select * from " + sparkTempViewName);
+		//IF (SELECT count(*)FROM information_schema.tables WHERE table_schema ='databasename'AND table_name ='tablename') > 0
+		//THEN
+		//INSERT statement 
+		//END IF
 	}
 	
 	
 	private static void createConnection() throws ClassNotFoundException{
 		// get connection
 	    if (con==null) {
-	    	Class.forName(hiveDriverName);
+	    	Class.forName(HIVE_DRIVER_NAME);
 	    	try {
-				con = DriverManager.getConnection("jdbc:hive2://localhost:10000/default", "cloudera", "cloudera");
+				con = DriverManager.getConnection(HIVE_URL, HIVE_USERNAME, HIVE_PASSWORD);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
@@ -107,7 +122,7 @@ public class HiveDB {
 	    //List<HotelDTO> dataDTO = dataset.collectAsList();
 	    		//(List<HotelDTO>) dataset.toDF().collect();
 	    //dataset.show(5);
-	    int count = 1;
+	    //int count = 1;
 	    for (Row row:dataset.collectAsList()) {
 	    	//System.out.println("Insert row: " + count);
 	    		    	
@@ -148,34 +163,36 @@ public class HiveDB {
 		    sb.append(")");
 	    
 		   
-		    //if (count % 2 == 0) {
+		    
 		    	//System.out.println(st.toString());
 		    	stmt.execute(sb.toString());
 		    	sb.setLength(0);
 		    	
-		    //}
 		    
-		    count++;
+		    
+		    //count++;
 	    }
 	    
 	    
 	    
-	    //stmt.execute(sb.toString());
-	   
-	    //con.close();
+	    
 		}
 	
 	public static void insertDataSetRowUseJDBC(String tableName, Dataset<Row> dataset) throws ClassNotFoundException, SQLException {
 	
 		// Saving data to a JDBC source
-		Class.forName(hiveDriverName);
+		Class.forName(HIVE_DRIVER_NAME);
 		
 		dataset.write()
 		  .format("jdbc")
-		  .option("url", "jdbc:hive2://localhost:10000/default")
+		  .mode("saveMode")
+		  //.mode("overwrite")
+		  //.mode("append")
+		  .option("url", HIVE_URL)
 		  .option("dbtable", tableName)
-		  .option("user", "cloudera")
-		  .option("password", "cloudera")
+		  .option("user", HIVE_USERNAME)
+		  .option("password", HIVE_PASSWORD)
+		  
 		  .save();
 	}
 	
