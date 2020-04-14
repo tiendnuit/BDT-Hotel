@@ -40,7 +40,7 @@ public class Streaming {
 		//Config
 		SparkConf sparkConf = new SparkConf()
 		.setAppName(TOPIC)
-		.setMaster("local[1]");
+		.setMaster(Constants.MASTER_RUN);
 		
 	    JavaStreamingContext streamingContext = new JavaStreamingContext(sparkConf, Durations.seconds(2));
 
