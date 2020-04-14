@@ -42,6 +42,10 @@ public class HotelDTO implements Writable {
 		String reservation_status_date;
 
 		
+	public HotelDTO(){
+		
+	}
+		
 	public HotelDTO(String key, String hotel, int is_canceled,
 				int lead_timetime, int arrival_date_year,
 				int arrival_date_month, int arrival_date_week_number,

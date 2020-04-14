@@ -4,9 +4,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
-import java.util.Properties;
 
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
 
 
@@ -72,41 +72,112 @@ public class HiveDB {
 	}
 	
 	
+	private static void createConnection() throws ClassNotFoundException{
+		// get connection
+	    if (con==null) {
+	    	Class.forName(hiveDriverName);
+	    	try {
+				con = DriverManager.getConnection("jdbc:hive2://localhost:10000/default", "cloudera", "cloudera");
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	
 	public static void createTableUseJDBC(String tableName) throws ClassNotFoundException, SQLException{
-		Class.forName(hiveDriverName);
-		
 	    // get connection
-	    con = DriverManager.getConnection("jdbc:hive2://localhost:10000/default", "cloudera", "cloudera");
+		createConnection();
+		
 	    Statement stmt = con.createStatement();
-	    stmt.execute("select * from hotel");
+	    //stmt.execute("select * from h1");
+	    stmt.execute("create table if not exists " + tableName + HiveSQLCreateTable);
 	
 	}
 	
-	public static void insertDataUseJDBC(String tableName, SQLContext sqlContext) throws ClassNotFoundException, SQLException {
+	public static void insertDataUseJDBC(String tableName, Dataset<Row> dataset) throws ClassNotFoundException, SQLException {
 	
-		// Register driver and create driver instance
-	    //Class.forName(hiveDriverName);
-	
-	    // get connection
-	   // Connection con = DriverManager.getConnection("jdbc:hive2://localhost:10000/default", "cloudera", "cloudera");
+		// get connection
+		createConnection();
 	
 	    // create statement
 	    Statement stmt = con.createStatement();
 	    
 	    StringBuilder sb = new StringBuilder();
+	    //List<HotelDTO> dataDTO = dataset.collectAsList();
+	    		//(List<HotelDTO>) dataset.toDF().collect();
+	    //dataset.show(5);
+	    int count = 1;
+	    for (Row row:dataset.collectAsList()) {
+	    	//System.out.println("Insert row: " + count);
+	    		    	
+	    	sb.append("insert into " + tableName);
+	    	sb.append(" values(" + row.getString(0) + ",");
+	    	sb.append("'"+row.getString(1) + "',");
+		    sb.append(Integer.parseInt(row.getString(2)) + ",");
+		    sb.append(Integer.parseInt(row.getString(3)) + ",");
+		    sb.append(Integer.parseInt(row.getString(4)) + ",");
+		    sb.append("'"+row.getString(5) + "',");
+		    sb.append(Integer.parseInt(row.getString(6)) + ",");
+		    sb.append(Integer.parseInt(row.getString(7)) + ",");
+		    sb.append(Integer.parseInt(row.getString(8)) + ",");
+		    sb.append(Integer.parseInt(row.getString(9)) + ",");
+		    sb.append(Integer.parseInt(row.getString(10)) + ",");
+		    sb.append("'"+row.getString(11) + "',");
+		    sb.append(Integer.parseInt(row.getString(12)) + ",");
+		    sb.append("'"+row.getString(13) + "',");
+		    sb.append("'"+row.getString(14) + "',");
+		    sb.append("'"+row.getString(15) + "',");
+		    sb.append("'"+row.getString(16) + "',");
+		    sb.append(Integer.parseInt(row.getString(17)) + ",");
+		    sb.append(Integer.parseInt(row.getString(18)) + ",");
+		    sb.append(Integer.parseInt(row.getString(19)) + ",");
+		    sb.append("'"+row.getString(20) + "',");
+		    sb.append("'"+row.getString(21) + "',");
+		    sb.append(Integer.parseInt(row.getString(22)) + ",");
+		    sb.append("'"+row.getString(23) + "',");
+		    sb.append("'"+row.getString(24) + "',");
+		    sb.append("'"+row.getString(25) + "',");
+		    sb.append(Integer.parseInt(row.getString(26)) + ",");
+		    sb.append("'"+row.getString(27) + "',");
+		    sb.append(Double.parseDouble(row.getString(28)) + ",");
+		    sb.append(Integer.parseInt(row.getString(29)) + ",");
+		    sb.append(Integer.parseInt(row.getString(30)) + ",");
+		    sb.append("'"+row.getString(31) + "',");
+		    sb.append("'"+row.getString(32) + "'");
+		    sb.append(")");
 	    
-		sb.append("insert into " + tableName);
-		sb.append("values( " + "1");
+		   
+		    //if (count % 2 == 0) {
+		    	//System.out.println(st.toString());
+		    	stmt.execute(sb.toString());
+		    	sb.setLength(0);
+		    	
+		    //}
 		    
-		    
-	    stmt.execute(sb.toString());
+		    count++;
+	    }
+	    
+	    
+	    
+	    //stmt.execute(sb.toString());
 	   
 	    //con.close();
 		}
 	
+	public static void insertDataSetRowUseJDBC(String tableName, Dataset<Row> dataset) throws ClassNotFoundException, SQLException {
 	
-	
+		// Saving data to a JDBC source
+		Class.forName(hiveDriverName);
+		
+		dataset.write()
+		  .format("jdbc")
+		  .option("url", "jdbc:hive2://localhost:10000/default")
+		  .option("dbtable", tableName)
+		  .option("user", "cloudera")
+		  .option("password", "cloudera")
+		  .save();
+	}
 	
 }
 
