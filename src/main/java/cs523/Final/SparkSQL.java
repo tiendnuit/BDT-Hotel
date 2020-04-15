@@ -91,6 +91,10 @@ public class SparkSQL {
        //Insert data
         //HiveDB.truncateTableUseSQL(sqlContext, HiveDB.HIVE_TABLE_NAME);
         HiveDB.insertDataUseSQL(sqlContext, HiveDB.HIVE_TABLE_NAME, TABLE_TEMP_VIEW_SPARK_SQL);
+        
+        ss.close();
+        connection.close();
+        System.out.println("Spark SQL run successfully");
        
 	}
 	

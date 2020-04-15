@@ -77,3 +77,5 @@ s"""CREATE EXTERNAL TABLE hotel
 |								CF_BOOKING_DETAILS:reservation_status_date
 |								")
 |TBLPROPERTIES ("hbase.table.name" = "Hotel")""".stripMargin
+
+sqlContext.sql(sqlStatement)
