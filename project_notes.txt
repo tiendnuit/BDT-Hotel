@@ -64,5 +64,37 @@ bin/zeppelin-daemon.sh restart
 sudo cp '/etc/hive/conf/hive-site.xml' /etc/spark/conf
 
 
+#============u============= MAVEN build =====================
+#below note to generate runable jar from maven build
+
+ <build>
+    <pluginManagement>
+		<plugins>
+			
+    <plugin>
+      <artifactId>maven-assembly-plugin</artifactId>
+      <configuration>
+        <archive>
+          <manifest>
+            <mainClass>cs523.Final.SparkSQL</mainClass>
+          </manifest>
+        </archive>
+        <descriptorRefs>
+          <descriptorRef>jar-with-dependencies</descriptorRef>
+        </descriptorRefs>
+      </configuration>
+    </plugin>
+  
+  
+  </plugins>
 
 
+
+    </pluginManagement>
+</build>
+
+
+and then run maven with: clean compile assembly:single
+
+Run jarunable with more libs
+--> java -cp "BDT_Hotel-0.0.1-SNAPSHOT-jar-with-dependencies.jar:/home/cloudera/git/BDT-Hotel/libs/*" cs523.Final.SparkSQL
