@@ -39,6 +39,12 @@
     	<artifactId>spark-sql_2.11</artifactId>
     	<version>2.2.0</version>
     </dependency>
+    
+    <dependency>
+    	<groupId>org.apache.hadoop</groupId>
+    	<artifactId>hadoop-common</artifactId>
+    	<version>2.7.1</version>
+    </dependency>
 	<!-- hbase -->
 	<!--
 	<dependency>
@@ -68,6 +74,13 @@
     	<version>2.0.0-alpha4</version>
 	</dependency>
 	-->
+	
+	<dependency>
+    	<groupId>org.apache.spark</groupId>
+   	 	<artifactId>spark-hive_2.11</artifactId>
+    	<version>2.2.0</version>
+    	<scope>provided</scope>
+	</dependency>
 	
 	<dependency>
     	<groupId>org.apache.hbase</groupId>
@@ -109,5 +122,35 @@
       <url>https://repo.maven.apache.org/maven2</url>
     </pluginRepository>
   </pluginRepositories>
- 
+ <build>
+    <pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
+            </plugin>
+        </plugins>
+    </pluginManagement>
+</build>
 </project>
