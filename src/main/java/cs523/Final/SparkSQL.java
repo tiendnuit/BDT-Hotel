@@ -58,16 +58,8 @@ public class SparkSQL {
 	        System.out.println("HBase is not running");
 	        e.printStackTrace();
 	    }
-		//Spec config Config loading
-		//SparkConf sparkConf = new SparkConf()
-		//		.setAppName(HBase.SQL_HOTEL)
-		//		.setMaster(Constants.MASTER_RUN)
-		//		.set("spark.sql.warehouse.dir", "/user/hive/warehouse");
-				
-		//JavaSparkContext context = new JavaSparkContext(sparkConf);
-		//context.hadoopConfiguration().set("spark.hbase.host", "localhost");
-		//context.hadoopConfiguration().set("spark.hbase.port", "2181");
-        //SQLContext sqlContext = new SQLContext(context);
+		
+		
         SparkSession ss = SparkSession
         		.builder()
         		.appName(HBase.SQL_HOTEL)
